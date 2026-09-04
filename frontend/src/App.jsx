@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import api from './services/api';
-import { PieChart, Pie, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Cell, CartesianGrid } from 'recharts';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Cell, CartesianGrid, Tooltip } from 'recharts';
 import { 
   LayoutDashboard, Users, BookOpen, GraduationCap, Wallet, LogOut, 
-  Search, Bell, ShieldAlert, ChevronDown
+  Search, Bell, ShieldAlert, ChevronDown, X
 } from 'lucide-react';
 
 function App() {
@@ -43,7 +43,7 @@ function App() {
         { icon: ShieldAlert, label: 'Security' },
     ];
 
-    // --- LOGIN VIEW (MongoDB Atlas Style) ---
+    // --- LOGIN VIEW ---
     if (!user) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-[#001e2b] text-gray-200">
@@ -70,12 +70,11 @@ function App() {
         );
     }
 
-    // --- MONGODB ATLAS STYLE DASHBOARD ---
+    // --- MAIN DASHBOARD ---
     return (
         <div className="h-screen flex flex-col bg-[#f7f7f7] text-gray-800">
             
-            {/* Top Global Navbar */}
-            <header className="h-12 bg-white border-b border-gray-200 flex items-center justify-between px-4">
+            <header className="h-12 bg-white border-b border-gray-200 flex items-center justify-between px-4 z-10">
                 <div className="flex items-center gap-2 text-gray-700 font-medium">
                     <span>School SMS</span>
                     <ChevronDown size={14} className="text-gray-400" />
@@ -92,7 +91,6 @@ function App() {
             </header>
 
             <div className="flex flex-1 overflow-hidden">
-                {/* Left Sidebar */}
                 <aside className="w-56 bg-white border-r border-gray-200 flex flex-col text-sm">
                     <div className="p-3 border-b border-gray-100">
                         <p className="text-xs text-gray-400 uppercase font-semibold mb-2 px-2">Deployment</p>
@@ -129,15 +127,12 @@ function App() {
                     </div>
                 </aside>
 
-                {/* Main Content Area */}
                 <main className="flex-1 flex flex-col overflow-hidden">
-                    {/* Warning Banner */}
                     <div className="bg-[#fdf4e3] border-b border-[#f3e0a8] text-[#5a4500] text-xs px-6 py-2 flex items-center gap-2">
                         <ShieldAlert size={14} />
                         <span>You have 1 unpaid invoice. Students with unpaid fees cannot view their grades.</span>
                     </div>
 
-                    {/* Dashboard Header / Search Bar */}
                     <div className="bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
                         <div>
                             <h1 className="text-xl font-semibold text-gray-800">{activeTab}</h1>
@@ -145,14 +140,10 @@ function App() {
                         </div>
                         <div className="relative w-64">
                             <Search size={14} className="absolute left-3 top-3 text-gray-400" />
-                            <input 
-                                placeholder={`Search ${activeTab}...`} 
-                                className="w-full pl-8 pr-3 py-2 bg-gray-50 border border-gray-200 rounded text-sm outline-none focus:border-green-500 focus:bg-white transition" 
-                            />
+                            <input placeholder={`Search ${activeTab}...`} className="w-full pl-8 pr-3 py-2 bg-gray-50 border border-gray-200 rounded text-sm outline-none focus:border-green-500 focus:bg-white transition" />
                         </div>
                     </div>
 
-                    {/* Dynamic Content Renderer */}
                     <div className="flex-1 overflow-y-auto p-6 bg-[#f7f7f7]">
                         {activeTab === 'Overview' && <OverviewView />}
                         {activeTab === 'Academics' && <CoursesView />}
@@ -183,7 +174,6 @@ const OverviewView = () => {
 
     return (
         <div className="space-y-6">
-            {/* Stat Cards Row */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
                     <div className="flex items-center justify-between mb-2">
@@ -213,7 +203,6 @@ const OverviewView = () => {
                 </div>
             </div>
 
-            {/* Chart Container */}
             <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
                 <div className="p-4 border-b border-gray-200 flex justify-between items-center">
                     <h2 className="text-base font-medium text-gray-800">Fee Distribution</h2>
@@ -229,15 +218,7 @@ const OverviewView = () => {
                                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
                                 <XAxis dataKey="name" stroke="#9ca3af" fontSize={12} />
                                 <YAxis stroke="#9ca3af" fontSize={12} />
-                                <Tooltip 
-                                    contentStyle={{ 
-                                        backgroundColor: '#ffffff', 
-                                        border: '1px solid #e5e7eb', 
-                                        borderRadius: '4px', 
-                                        boxShadow: '0 2px 4px rgba(0,0,0,0.05)' 
-                                    }} 
-                                    cursor={{ fill: '#f9fafb' }}
-                                />
+                                <Tooltip contentStyle={{ backgroundColor: '#ffffff', border: '1px solid #e5e7eb', borderRadius: '4px' }} cursor={{ fill: '#f9fafb' }} />
                                 <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={60}>
                                     {chartData.map((entry, index) => (
                                         <Cell key={`cell-${index}`} fill={entry.fill} />
@@ -258,7 +239,6 @@ const SecurityView = () => (
     <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
         <h2 className="text-lg font-medium text-gray-800 mb-2">Security & Access</h2>
         <p className="text-sm text-gray-500 mb-6">Manage user roles, passwords, and system security.</p>
-        
         <div className="space-y-3">
             <div className="flex items-center justify-between p-4 border border-gray-200 rounded bg-gray-50">
                 <div className="flex items-center gap-3">
@@ -270,7 +250,6 @@ const SecurityView = () => (
                 </div>
                 <button className="text-sm text-white bg-green-600 px-3 py-1.5 rounded hover:bg-green-700">Enable</button>
             </div>
-
             <div className="flex items-center justify-between p-4 border border-gray-200 rounded bg-gray-50">
                 <div className="flex items-center gap-3">
                     <Users size={20} className="text-blue-600" />
@@ -287,21 +266,44 @@ const SecurityView = () => (
 
 const StudentsView = () => {
     const [students, setStudents] = useState([]);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [newStudent, setNewStudent] = useState({ name: '', email: '', password: 'pass123', studentId: '' });
+
+    const loadStudents = async () => {
+        try {
+            const res = await api.get('/auth/users');
+            setStudents(res.data.filter(u => u.role === 'student'));
+        } catch (error) { console.error(error); }
+    };
+
     useEffect(() => {
-        api.get('/auth/users').then(res => setStudents(res.data.filter(u => u.role === 'student'))).catch(err => console.error(err));
+        loadStudents();
     }, []);
 
+    const handleAddStudent = async (e) => {
+        e.preventDefault();
+        try {
+            await api.post('/auth/register', { ...newStudent, role: 'student' });
+            setIsModalOpen(false);
+            setNewStudent({ name: '', email: '', password: 'pass123', studentId: '' });
+            loadStudents(); // Reload the list instantly
+        } catch (error) {
+            alert('Failed to add student. Email might already exist.');
+        }
+    };
+
     return (
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+        <div className="bg-white rounded-lg border border-gray-200 shadow-sm relative">
             <div className="p-4 border-b border-gray-200 flex justify-between items-center">
                 <div>
                     <h2 className="text-lg font-medium text-gray-800">Student Directory</h2>
                     <p className="text-xs text-gray-500 mt-1">{students.length} active students</p>
                 </div>
-                <button className="text-sm text-white bg-[#001e2b] px-3 py-1.5 rounded hover:bg-black">+ Add Student</button>
+                <button onClick={() => setIsModalOpen(true)} className="text-sm text-white bg-[#001e2b] px-3 py-1.5 rounded hover:bg-black">
+                    + Add Student
+                </button>
             </div>
             
-            {/* Enterprise Data Table */}
             <div className="overflow-x-auto">
                 <table className="w-full text-sm text-left text-gray-600">
                     <thead className="bg-gray-50 text-xs text-gray-500 uppercase border-b border-gray-200">
@@ -338,24 +340,68 @@ const StudentsView = () => {
                     </tbody>
                 </table>
             </div>
+
+            {isModalOpen && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
+                        <button onClick={() => setIsModalOpen(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+                            <X size={18} />
+                        </button>
+                        <h3 className="text-lg font-medium text-gray-800 mb-4">Add New Student</h3>
+                        <form onSubmit={handleAddStudent} className="space-y-3">
+                            <input type="text" placeholder="Full Name" value={newStudent.name} onChange={(e) => setNewStudent({...newStudent, name: e.target.value})} className="w-full p-2 border border-gray-300 rounded text-sm" required />
+                            <input type="email" placeholder="Email Address" value={newStudent.email} onChange={(e) => setNewStudent({...newStudent, email: e.target.value})} className="w-full p-2 border border-gray-300 rounded text-sm" required />
+                            <input type="text" placeholder="Student ID (e.g., UCC1234)" value={newStudent.studentId} onChange={(e) => setNewStudent({...newStudent, studentId: e.target.value})} className="w-full p-2 border border-gray-300 rounded text-sm" required />
+                            <div className="flex justify-end gap-2 pt-4">
+                                <button type="button" onClick={() => setIsModalOpen(false)} className="text-sm text-gray-600 border border-gray-300 px-3 py-1.5 rounded hover:bg-gray-50">Cancel</button>
+                                <button type="submit" className="text-sm text-white bg-green-600 px-3 py-1.5 rounded hover:bg-green-700">Save Student</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
 
 const CoursesView = () => {
     const [courses, setCourses] = useState([]);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [newCourse, setNewCourse] = useState({ title: '', code: '', credits: 3 });
+
+    const loadCourses = async () => {
+        try {
+            const res = await api.get('/courses/');
+            setCourses(res.data);
+        } catch (error) { console.error(error); }
+    };
+
     useEffect(() => {
-        api.get('/courses/').then(res => setCourses(res.data)).catch(err => console.error(err));
+        loadCourses();
     }, []);
 
+    const handleAddCourse = async (e) => {
+        e.preventDefault();
+        try {
+            await api.post('/courses/', newCourse);
+            setIsModalOpen(false);
+            setNewCourse({ title: '', code: '', credits: 3 });
+            loadCourses(); // Reload the list instantly
+        } catch (error) {
+            alert('Failed to add course.');
+        }
+    };
+
     return (
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+        <div className="bg-white rounded-lg border border-gray-200 shadow-sm relative">
             <div className="p-4 border-b border-gray-200 flex justify-between items-center">
                 <div>
                     <h2 className="text-lg font-medium text-gray-800">Active Courses</h2>
                     <p className="text-xs text-gray-500 mt-1">{courses.length} courses offered this semester</p>
                 </div>
-                <button className="text-sm text-white bg-[#001e2b] px-3 py-1.5 rounded hover:bg-black">+ Add Course</button>
+                <button onClick={() => setIsModalOpen(true)} className="text-sm text-white bg-[#001e2b] px-3 py-1.5 rounded hover:bg-black">
+                    + Add Course
+                </button>
             </div>
             
             <div className="overflow-x-auto">
@@ -392,6 +438,26 @@ const CoursesView = () => {
                     </tbody>
                 </table>
             </div>
+
+            {isModalOpen && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
+                        <button onClick={() => setIsModalOpen(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+                            <X size={18} />
+                        </button>
+                        <h3 className="text-lg font-medium text-gray-800 mb-4">Add New Course</h3>
+                        <form onSubmit={handleAddCourse} className="space-y-3">
+                            <input type="text" placeholder="Course Title (e.g., Calculus)" value={newCourse.title} onChange={(e) => setNewCourse({...newCourse, title: e.target.value})} className="w-full p-2 border border-gray-300 rounded text-sm" required />
+                            <input type="text" placeholder="Course Code (e.g., MATH 101)" value={newCourse.code} onChange={(e) => setNewCourse({...newCourse, code: e.target.value})} className="w-full p-2 border border-gray-300 rounded text-sm" required />
+                            <input type="number" placeholder="Credits" value={newCourse.credits} onChange={(e) => setNewCourse({...newCourse, credits: parseInt(e.target.value)})} className="w-full p-2 border border-gray-300 rounded text-sm" required />
+                            <div className="flex justify-end gap-2 pt-4">
+                                <button type="button" onClick={() => setIsModalOpen(false)} className="text-sm text-gray-600 border border-gray-300 px-3 py-1.5 rounded hover:bg-gray-50">Cancel</button>
+                                <button type="submit" className="text-sm text-white bg-green-600 px-3 py-1.5 rounded hover:bg-green-700">Save Course</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
