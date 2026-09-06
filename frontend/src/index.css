@@ -1,8 +1,9 @@
 @import "tailwindcss";
 
 body {
-  background-color: #f7f7f7;
-  color: #1f2937;
+  /* Changed from stark white to a soft, premium stone-grey */
+  background-color: #aeaee8; 
+  color: #1F2937;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
 }
 

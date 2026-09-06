@@ -20,6 +20,8 @@ function App() {
     const [loginData, setLoginData] = useState({ email: '', password: '' });
     const [activeTab, setActiveTab] = useState('Overview');
     const [quickStats, setQuickStats] = useState({ students: null, courses: null, arrears: null });
+    const [searchQuery, setSearchQuery] = useState('');
+    const [notifOpen, setNotifOpen] = useState(false);
 
     useEffect(() => {
         const storedUser = localStorage.getItem('user');
@@ -51,6 +53,12 @@ function App() {
     const handleLogout = () => {
         localStorage.clear();
         setUser(null);
+    };
+
+    const handleTabChange = (label) => {
+        setActiveTab(label);
+        setSearchQuery(''); // clear stale search text from the previous tab
+        setNotifOpen(false);
     };
 
     // Each item pairs an icon with a gradient (active state) and tint (resting state)
@@ -118,10 +126,30 @@ function App() {
                     <span className="text-sm text-[#6B6B65]">Term 2 &middot; Week 6 &middot; {today}</span>
                 </div>
                 <div className="flex items-center gap-4">
-                    <button className="text-[#6B6B65] hover:text-[#1F2937] relative">
-                        <Bell size={18} />
-                        <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-[#C97A2B] rounded-full"></span>
-                    </button>
+                    <div className="relative">
+                        <button onClick={() => setNotifOpen(!notifOpen)} className="text-[#6B6B65] hover:text-[#1F2937] relative">
+                            <Bell size={18} />
+                            <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-[#C97A2B] rounded-full"></span>
+                        </button>
+                        {notifOpen && (
+                            <>
+                                {/* Click-outside catcher */}
+                                <div className="fixed inset-0 z-30" onClick={() => setNotifOpen(false)}></div>
+                                <div className="absolute right-0 top-8 w-72 bg-white/95 backdrop-blur-xl border border-[#E5E3DA] rounded-xl shadow-xl z-40 overflow-hidden">
+                                    <div className="px-4 py-3 border-b border-[#F0EEE6] text-sm font-serif text-[#1F2937]">Notifications</div>
+                                    <div className="px-4 py-3 border-b border-[#F0EEE6] flex items-start gap-2">
+                                        <AlertTriangle size={14} className="text-[#C97A2B] mt-0.5 shrink-0" />
+                                        <p className="text-xs text-[#4B4B47]">1 unpaid invoice - students affected can't view grades.</p>
+                                    </div>
+                                    {/* TODO: replace with a real "/notifications" endpoint - reusing upcoming events as placeholder content */}
+                                    <div className="px-4 py-3 flex items-start gap-2">
+                                        <Calendar size={14} className="text-[#3B5BA5] mt-0.5 shrink-0" />
+                                        <p className="text-xs text-[#4B4B47]">Mid-term exams begin 12 Sep.</p>
+                                    </div>
+                                </div>
+                            </>
+                        )}
+                    </div>
                     <div className="w-7 h-7 rounded-full border border-[#D8D6CC] bg-white/60 flex items-center justify-center text-xs font-medium text-[#6B6B65]">
                         {user.name.charAt(0)}
                     </div>
@@ -136,7 +164,7 @@ function App() {
                             {sidebarMainLinks.map((link, index) => {
                                 const isActive = activeTab === link.label;
                                 return (
-                                    <button key={index} onClick={() => setActiveTab(link.label)} className={`w-full flex items-center gap-3 px-2 py-2 rounded-lg transition-colors ${isActive ? 'bg-white/70' : 'hover:bg-white/50'}`}>
+                                    <button key={index} onClick={() => handleTabChange(link.label)} className={`w-full flex items-center gap-3 px-2 py-2 rounded-lg transition-colors ${isActive ? 'bg-white/70' : 'hover:bg-white/50'}`}>
                                         <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-gradient-to-br shadow-sm ${isActive ? link.gradient : link.tint}`}>
                                             <link.icon size={15} className={isActive ? 'text-white' : ''} style={isActive ? {} : { color: link.color }} />
                                         </div>
@@ -156,7 +184,7 @@ function App() {
                             {sidebarManageLinks.map((link, index) => {
                                 const isActive = activeTab === link.label;
                                 return (
-                                    <button key={index} onClick={() => setActiveTab(link.label)} className={`w-full flex items-center gap-3 px-2 py-2 rounded-lg transition-colors ${isActive ? 'bg-white/70' : 'hover:bg-white/50'}`}>
+                                    <button key={index} onClick={() => handleTabChange(link.label)} className={`w-full flex items-center gap-3 px-2 py-2 rounded-lg transition-colors ${isActive ? 'bg-white/70' : 'hover:bg-white/50'}`}>
                                         <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-gradient-to-br shadow-sm ${isActive ? link.gradient : link.tint}`}>
                                             <link.icon size={15} className={isActive ? 'text-white' : ''} style={isActive ? {} : { color: link.color }} />
                                         </div>
@@ -188,17 +216,25 @@ function App() {
                             <h1 className="text-xl font-serif text-[#1F2937]">{activeTab}</h1>
                             <p className="text-xs text-[#6B6B65] mt-0.5">View and manage your school's real-time data.</p>
                         </div>
-                        <div className="relative w-64">
-                            <Search size={14} className="absolute left-3 top-3 text-[#9C9A90]" />
-                            <input placeholder={`Search ${activeTab}...`} className="w-full pl-8 pr-3 py-2 rounded-lg bg-white/70 border border-white/60 text-sm outline-none focus:border-[#3B5BA5] focus:bg-white transition" />
-                        </div>
+                        {/* Search only renders on tabs that actually have a filterable list */}
+                        {['Academics', 'Admissions', 'Students'].includes(activeTab) && (
+                            <div className="relative w-64">
+                                <Search size={14} className="absolute left-3 top-3 text-[#9C9A90]" />
+                                <input
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    placeholder={`Search ${activeTab}...`}
+                                    className="w-full pl-8 pr-3 py-2 rounded-lg bg-white/70 border border-white/60 text-sm outline-none focus:border-[#3B5BA5] focus:bg-white transition"
+                                />
+                            </div>
+                        )}
                     </div>
 
                     <div className="flex-1 overflow-y-auto p-6 bg-[#FAFAF7]">
                         {activeTab === 'Overview' && <OverviewView />}
-                        {activeTab === 'Academics' && <CoursesView />}
-                        {activeTab === 'Admissions' && <StudentsView />}
-                        {activeTab === 'Students' && <StudentsView />}
+                        {activeTab === 'Academics' && <CoursesView searchQuery={searchQuery} />}
+                        {activeTab === 'Admissions' && <StudentsView searchQuery={searchQuery} />}
+                        {activeTab === 'Students' && <StudentsView searchQuery={searchQuery} />}
                         {activeTab === 'Finances' && <FinancesView />}
                         {activeTab === 'Security' && <SecurityView />}
                     </div>
@@ -213,6 +249,8 @@ function App() {
 const OverviewView = () => {
     const [stats, setStats] = useState(null);
     const [teacherCount, setTeacherCount] = useState(null);
+    const [showAllActivity, setShowAllActivity] = useState(false);
+    const [classPeriod, setClassPeriod] = useState('This term');
 
     useEffect(() => {
         api.get('/fees/stats').then(res => setStats(res.data)).catch(err => console.error(err));
@@ -223,13 +261,24 @@ const OverviewView = () => {
 
     const collectionRate = stats ? Math.round((stats.paid / (stats.paid + stats.unpaid)) * 100) : 0;
 
-    const studentsByClass = [
-        { name: 'Grade 8', count: 62 },
-        { name: 'Grade 9', count: 74 },
-        { name: 'Grade 10', count: 68 },
-        { name: 'Grade 11', count: 55 },
-        { name: 'Grade 12', count: 41 },
-    ];
+    // TODO: replace with a real "/students/by-class?term=" endpoint once class is
+    // tracked on the student model. Two periods included so the selector actually does something.
+    const studentsByClassData = {
+        'This term': [
+            { name: 'Grade 8', count: 62 },
+            { name: 'Grade 9', count: 74 },
+            { name: 'Grade 10', count: 68 },
+            { name: 'Grade 11', count: 55 },
+            { name: 'Grade 12', count: 41 },
+        ],
+        'Last term': [
+            { name: 'Grade 8', count: 58 },
+            { name: 'Grade 9', count: 70 },
+            { name: 'Grade 10', count: 71 },
+            { name: 'Grade 11', count: 52 },
+            { name: 'Grade 12', count: 44 },
+        ],
+    };
 
     const incomeVsExpenses = [
         { month: 'Apr', income: 18400, expenses: 12100 },
@@ -265,82 +314,91 @@ const OverviewView = () => {
         { id: 1, name: 'Isaac', action: 'paid fees', amount: 'GHS 5,000', time: '2m ago', icon: <DollarSign size={16} />, tone: 'text-[#4C7A5A] bg-[#EAF3EE]' },
         { id: 2, name: 'Dr. Mensah', action: 'updated DCIT 201 grades', amount: '', time: '15m ago', icon: <GraduationCap size={16} />, tone: 'text-[#3B5BA5] bg-[#EAF0FA]' },
         { id: 3, name: 'Ama', action: 'enrolled in Operating Systems', amount: '', time: '1h ago', icon: <BookOpen size={16} />, tone: 'text-[#A9822B] bg-[#F7EFDD]' },
+        // TODO: replace with a real "/activity/recent" endpoint - these extra entries
+        // are placeholder content revealed by "View all activity" for now.
+        { id: 4, name: 'Kwame', action: 'paid fees', amount: 'GHS 3,200', time: '3h ago', icon: <DollarSign size={16} />, tone: 'text-[#4C7A5A] bg-[#EAF3EE]' },
+        { id: 5, name: 'Mrs. Boateng', action: 'added a new course', amount: '', time: '5h ago', icon: <BookOpen size={16} />, tone: 'text-[#A9822B] bg-[#F7EFDD]' },
+        { id: 6, name: 'Yaw', action: 'was marked absent', amount: '', time: '1d ago', icon: <AlertTriangle size={16} />, tone: 'text-[#C97A2B] bg-[#FBF1E3]' },
     ];
 
     return (
         <div className="space-y-6">
             {/* Top Metric Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
-                <div className="bg-white border border-[#E5E3DA] p-6 border-t-2 border-t-[#3B5BA5]">
+                <div className="bg-gradient-to-br from-white to-[#EEF3FB] border border-[#E5E3DA] p-6 border-t-2 border-t-[#3B5BA5] rounded-xl shadow-sm">
                     <div className="flex items-center justify-between mb-4">
                         <Users size={20} className="text-[#3B5BA5]" />
-                        <span className="text-xs font-medium text-[#4C7A5A]">+12% this month</span>
+                        <span className="text-xs font-medium text-[#4C7A5A] bg-[#EAF3EE] px-2 py-1 rounded-full">+12% this month</span>
                     </div>
                     <p className="text-sm text-[#6B6B65]">Total students</p>
                     <p className="text-3xl font-serif text-[#1F2937] mt-1">{stats ? stats.paidCount + stats.unpaidCount : 0}</p>
                 </div>
 
-                <div className="bg-white border border-[#E5E3DA] p-6 border-t-2 border-t-[#A9822B]">
+                <div className="bg-gradient-to-br from-white to-[#FBF5E7] border border-[#E5E3DA] p-6 border-t-2 border-t-[#A9822B] rounded-xl shadow-sm">
                     <div className="flex items-center justify-between mb-4">
                         <UserCheck size={20} className="text-[#A9822B]" />
-                        <span className="text-xs font-medium text-[#6B6B65]">Staff</span>
+                        <span className="text-xs font-medium text-[#6B6B65] bg-[#F7EFDD] px-2 py-1 rounded-full">Staff</span>
                     </div>
                     <p className="text-sm text-[#6B6B65]">Total teachers</p>
                     <p className="text-3xl font-serif text-[#1F2937] mt-1">{teacherCount !== null ? teacherCount : 0}</p>
                 </div>
 
-                <div className="bg-white border border-[#E5E3DA] p-6 border-t-2 border-t-[#4C7A5A]">
+                <div className="bg-gradient-to-br from-white to-[#EEF5F1] border border-[#E5E3DA] p-6 border-t-2 border-t-[#4C7A5A] rounded-xl shadow-sm">
                     <div className="flex items-center justify-between mb-4">
                         <DollarSign size={20} className="text-[#4C7A5A]" />
-                        <span className="text-xs font-medium text-[#6B6B65]">GHS</span>
+                        <span className="text-xs font-medium text-[#6B6B65] bg-[#EAF3EE] px-2 py-1 rounded-full">GHS</span>
                     </div>
                     <p className="text-sm text-[#6B6B65]">Total income</p>
                     <p className="text-3xl font-serif text-[#1F2937] mt-1">{stats ? stats.paid.toLocaleString() : 0}</p>
                 </div>
 
-                <div className="bg-white border border-[#E5E3DA] p-6 border-t-2 border-t-[#C97A2B]">
+                <div className="bg-gradient-to-br from-white to-[#FDF1E4] border border-[#E5E3DA] p-6 border-t-2 border-t-[#C97A2B] rounded-xl shadow-sm">
                     <div className="flex items-center justify-between mb-4">
                         <AlertTriangle size={20} className="text-[#C97A2B]" />
-                        <span className="text-xs font-medium text-[#C97A2B]">Needs review</span>
+                        <span className="text-xs font-medium text-[#C97A2B] bg-[#FBF1E3] px-2 py-1 rounded-full">Needs review</span>
                     </div>
                     <p className="text-sm text-[#6B6B65]">Outstanding fees</p>
                     <p className="text-3xl font-serif text-[#1F2937] mt-1">{stats ? stats.unpaid.toLocaleString() : 0}</p>
                 </div>
             </div>
 
-                        {/* Row 2: Calendar & Event Details */}
+            {/* Row 2: Calendar & Event Details */}
             <CalendarView />
 
             {/* Row 3: Students by Class & Fee Collection */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 bg-white border border-[#E5E3DA]">
+                <div className="lg:col-span-2 bg-gradient-to-br from-white to-[#F4F2EA] border border-[#E5E3DA] rounded-xl shadow-sm overflow-hidden">
                     <div className="p-5 border-b border-[#F0EEE6] flex justify-between items-center">
                         <div>
                             <h2 className="text-base font-serif text-[#1F2937]">Students by class</h2>
                             <p className="text-xs text-[#6B6B65] mt-0.5">Current enrollment across grade levels</p>
                         </div>
-                        <div className="flex items-center gap-2 text-xs text-[#9C9A90] cursor-pointer hover:text-[#6B6B65]">
-                            <span>This term</span>
-                            <ChevronDown size={14} />
-                        </div>
+                        <select
+                            value={classPeriod}
+                            onChange={(e) => setClassPeriod(e.target.value)}
+                            className="text-xs text-[#6B6B65] bg-transparent border border-[#E5E3DA] rounded-md px-2 py-1 outline-none hover:bg-[#FAFAF7] cursor-pointer"
+                        >
+                            <option>This term</option>
+                            <option>Last term</option>
+                        </select>
                     </div>
                     <div className="p-5 h-72">
                         <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={studentsByClass} layout="vertical" margin={{ left: 10 }}>
+                            <BarChart data={studentsByClassData[classPeriod]} layout="vertical" margin={{ left: 10 }}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#F0EEE6" horizontal={false} />
                                 <XAxis type="number" stroke="#9C9A90" fontSize={12} axisLine={false} tickLine={false} />
                                 <YAxis type="category" dataKey="name" stroke="#9C9A90" fontSize={12} axisLine={false} tickLine={false} width={60} />
                                 <Tooltip
-                                    contentStyle={{ backgroundColor: '#ffffff', border: '1px solid #E5E3DA', borderRadius: '2px', boxShadow: 'none' }}
+                                    contentStyle={{ backgroundColor: '#ffffff', border: '1px solid #E5E3DA', borderRadius: '8px', boxShadow: 'none' }}
                                     cursor={{ fill: '#FAFAF7' }}
                                 />
-                                <Bar dataKey="count" fill="#3B5BA5" radius={[0, 2, 2, 0]} barSize={22} />
+                                <Bar dataKey="count" fill="#3B5BA5" radius={[4, 4, 0, 0]} barSize={22} />
                             </BarChart>
                         </ResponsiveContainer>
                     </div>
                 </div>
 
-                <div className="bg-white border border-[#E5E3DA] p-5 flex flex-col">
+                <div className="bg-gradient-to-br from-white to-[#F4F2EA] border border-[#E5E3DA] p-5 flex flex-col rounded-xl shadow-sm">
                     <h2 className="text-base font-serif text-[#1F2937]">Fee collection</h2>
                     <p className="text-xs text-[#6B6B65] mt-0.5 mb-5">Collected vs. outstanding, this term</p>
 
@@ -348,8 +406,8 @@ const OverviewView = () => {
                         <span className="text-4xl font-serif text-[#1F2937]">{collectionRate}%</span>
                         <span className="text-xs text-[#6B6B65] mb-1.5">collected</span>
                     </div>
-                    <div className="h-2 bg-[#FBF1E3] mb-6">
-                        <div className="h-2 bg-[#4C7A5A]" style={{ width: `${collectionRate}%` }}></div>
+                    <div className="h-2 bg-[#FBF1E3] mb-6 rounded-full">
+                        <div className="h-2 bg-[#4C7A5A] rounded-full" style={{ width: `${collectionRate}%` }}></div>
                     </div>
 
                     <div className="space-y-3 text-sm mt-auto">
@@ -365,9 +423,9 @@ const OverviewView = () => {
                 </div>
             </div>
 
-            {/* Row 3: Income vs Expenses (Left) & Fee Collection (Right) */}
+            {/* Row 4: Income vs Expenses & Payment Methods */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 bg-white border border-[#E5E3DA]">
+                <div className="lg:col-span-2 bg-gradient-to-br from-white to-[#F4F2EA] border border-[#E5E3DA] rounded-xl shadow-sm overflow-hidden">
                     <div className="p-5 border-b border-[#F0EEE6] flex justify-between items-center">
                         <div>
                             <h2 className="text-base font-serif text-[#1F2937]">Income vs. expenses</h2>
@@ -391,7 +449,7 @@ const OverviewView = () => {
                                 <XAxis dataKey="month" stroke="#9C9A90" fontSize={12} axisLine={false} tickLine={false} />
                                 <YAxis stroke="#9C9A90" fontSize={12} axisLine={false} tickLine={false} />
                                 <Tooltip
-                                    contentStyle={{ backgroundColor: '#ffffff', border: '1px solid #E5E3DA', borderRadius: '2px', boxShadow: 'none' }}
+                                    contentStyle={{ backgroundColor: '#ffffff', border: '1px solid #E5E3DA', borderRadius: '8px', boxShadow: 'none' }}
                                 />
                                 <Legend wrapperStyle={{ fontSize: '12px' }} />
                                 <Area type="monotone" dataKey="income" name="Income" stroke="#4C7A5A" fill="url(#incomeFill)" strokeWidth={2} />
@@ -401,52 +459,7 @@ const OverviewView = () => {
                     </div>
                 </div>
 
-                <div className="bg-white border border-[#E5E3DA] p-5 flex flex-col">
-                    <h2 className="text-base font-serif text-[#1F2937]">Fee collection</h2>
-                    <p className="text-xs text-[#6B6B65] mt-0.5 mb-5">Collected vs. outstanding, this term</p>
-
-                    <div className="flex items-end gap-2 mb-2">
-                        <span className="text-4xl font-serif text-[#1F2937]">{collectionRate}%</span>
-                        <span className="text-xs text-[#6B6B65] mb-1.5">collected</span>
-                    </div>
-                    <div className="h-2 bg-[#FBF1E3] mb-6">
-                        <div className="h-2 bg-[#4C7A5A]" style={{ width: `${collectionRate}%` }}></div>
-                    </div>
-
-                    <div className="space-y-3 text-sm mt-auto">
-                        <div className="flex justify-between items-center">
-                            <span className="flex items-center gap-2 text-[#6B6B65]"><span className="w-2 h-2 bg-[#4C7A5A] rounded-full"></span>Collected</span>
-                            <span className="font-medium text-[#1F2937]">GHS {stats ? stats.paid.toLocaleString() : 0}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                            <span className="flex items-center gap-2 text-[#6B6B65]"><span className="w-2 h-2 bg-[#C97A2B] rounded-full"></span>Outstanding</span>
-                            <span className="font-medium text-[#1F2937]">GHS {stats ? stats.unpaid.toLocaleString() : 0}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Row 4: Attendance Trend (Left) & Payment Methods (Right) */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 bg-white border border-[#E5E3DA]">
-                    <div className="p-5 border-b border-[#F0EEE6]">
-                        <h2 className="text-base font-serif text-[#1F2937]">Attendance trend</h2>
-                        <p className="text-xs text-[#6B6B65] mt-0.5">Daily attendance rate, this week</p>
-                    </div>
-                    <div className="p-5 h-64">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={attendanceTrend}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#F0EEE6" vertical={false} />
-                                <XAxis dataKey="day" stroke="#9C9A90" fontSize={12} axisLine={false} tickLine={false} />
-                                <YAxis domain={[80, 100]} stroke="#9C9A90" fontSize={12} axisLine={false} tickLine={false} />
-                                <Tooltip contentStyle={{ backgroundColor: '#ffffff', border: '1px solid #E5E3DA', borderRadius: '2px', boxShadow: 'none' }} />
-                                <Line type="monotone" dataKey="rate" name="Attendance %" stroke="#3B5BA5" strokeWidth={2} dot={{ r: 4, fill: '#3B5BA5' }} />
-                            </LineChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-
-                <div className="bg-white border border-[#E5E3DA] flex flex-col">
+                <div className="bg-gradient-to-br from-white to-[#F4F2EA] border border-[#E5E3DA] flex flex-col rounded-xl shadow-sm overflow-hidden">
                     <div className="p-5 border-b border-[#F0EEE6]">
                         <h2 className="text-base font-serif text-[#1F2937]">Payment methods</h2>
                         <p className="text-xs text-[#6B6B65] mt-0.5">Share of fees collected this term</p>
@@ -460,7 +473,7 @@ const OverviewView = () => {
                                             <Cell key={`cell-${index}`} fill={entry.fill} />
                                         ))}
                                     </Pie>
-                                    <Tooltip contentStyle={{ backgroundColor: '#ffffff', border: '1px solid #E5E3DA', borderRadius: '2px', boxShadow: 'none' }} />
+                                    <Tooltip contentStyle={{ backgroundColor: '#ffffff', border: '1px solid #E5E3DA', borderRadius: '8px', boxShadow: 'none' }} />
                                 </PieChart>
                             </ResponsiveContainer>
                         </div>
@@ -476,38 +489,27 @@ const OverviewView = () => {
                 </div>
             </div>
 
-            {/* Row 5: Recent Activity & Upcoming Events */}
+            {/* Row 5: Attendance Trend & Upcoming Events */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 bg-white border border-[#E5E3DA]">
-                    <div className="p-5 border-b border-[#F0EEE6] flex justify-between items-center">
-                        <div>
-                            <h2 className="text-base font-serif text-[#1F2937]">Recent activity</h2>
-                            <p className="text-xs text-[#6B6B65] mt-0.5">Latest updates from the school</p>
-                        </div>
-                        <Bell size={16} className="text-[#9C9A90]" />
+                <div className="lg:col-span-2 bg-gradient-to-br from-white to-[#F4F2EA] border border-[#E5E3DA] rounded-xl shadow-sm overflow-hidden">
+                    <div className="p-5 border-b border-[#F0EEE6]">
+                        <h2 className="text-base font-serif text-[#1F2937]">Attendance trend</h2>
+                        <p className="text-xs text-[#6B6B65] mt-0.5">Daily attendance rate, this week</p>
                     </div>
-                    <div className="p-5 grid grid-cols-1 md:grid-cols-3 gap-5">
-                        {recentActivity.map(activity => (
-                            <div key={activity.id} className="flex items-start gap-3">
-                                <div className={`w-9 h-9 flex items-center justify-center shrink-0 ${activity.tone}`}>
-                                    {activity.icon}
-                                </div>
-                                <div className="flex-1 pt-0.5">
-                                    <p className="text-sm text-[#1F2937]">
-                                        <span className="font-medium">{activity.name}</span> {activity.action}
-                                        {activity.amount && <span className="font-medium text-[#4C7A5A]"> {activity.amount}</span>}
-                                    </p>
-                                    <p className="text-xs text-[#9C9A90] mt-1">{activity.time}</p>
-                                </div>
-                            </div>
-                        ))}
+                    <div className="p-5 h-64">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={attendanceTrend}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#F0EEE6" vertical={false} />
+                                <XAxis dataKey="day" stroke="#9C9A90" fontSize={12} axisLine={false} tickLine={false} />
+                                <YAxis domain={[80, 100]} stroke="#9C9A90" fontSize={12} axisLine={false} tickLine={false} />
+                                <Tooltip contentStyle={{ backgroundColor: '#ffffff', border: '1px solid #E5E3DA', borderRadius: '8px', boxShadow: 'none' }} />
+                                <Line type="monotone" dataKey="rate" name="Attendance %" stroke="#3B5BA5" strokeWidth={2} dot={{ r: 4, fill: '#3B5BA5' }} />
+                            </LineChart>
+                        </ResponsiveContainer>
                     </div>
-                    <button className="text-sm text-[#3B5BA5] hover:text-[#2A4380] font-medium p-4 border-t border-[#F0EEE6] w-full text-left">
-                        View all activity
-                    </button>
                 </div>
 
-                <div className="bg-white border border-[#E5E3DA] flex flex-col">
+                <div className="bg-gradient-to-br from-white to-[#F4F2EA] border border-[#E5E3DA] flex flex-col rounded-xl shadow-sm overflow-hidden">
                     <div className="p-5 border-b border-[#F0EEE6] flex justify-between items-center">
                         <h2 className="text-base font-serif text-[#1F2937]">Upcoming events</h2>
                         <Calendar size={16} className="text-[#9C9A90]" />
@@ -525,40 +527,103 @@ const OverviewView = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Row 6: Recent Activity */}
+            <div className="bg-gradient-to-br from-white to-[#F4F2EA] border border-[#E5E3DA] rounded-xl shadow-sm overflow-hidden">
+                <div className="p-5 border-b border-[#F0EEE6] flex justify-between items-center">
+                    <div>
+                        <h2 className="text-base font-serif text-[#1F2937]">Recent activity</h2>
+                        <p className="text-xs text-[#6B6B65] mt-0.5">Latest updates from the school</p>
+                    </div>
+                    <Bell size={16} className="text-[#9C9A90]" />
+                </div>
+                <div className="p-5 grid grid-cols-1 md:grid-cols-3 gap-5">
+                    {(showAllActivity ? recentActivity : recentActivity.slice(0, 3)).map(activity => (
+                        <div key={activity.id} className="flex items-start gap-3">
+                            <div className={`w-9 h-9 flex items-center justify-center shrink-0 rounded-lg ${activity.tone}`}>
+                                {activity.icon}
+                            </div>
+                            <div className="flex-1 pt-0.5">
+                                <p className="text-sm text-[#1F2937]">
+                                    <span className="font-medium">{activity.name}</span> {activity.action}
+                                    {activity.amount && <span className="font-medium text-[#4C7A5A]"> {activity.amount}</span>}
+                                </p>
+                                <p className="text-xs text-[#9C9A90] mt-1">{activity.time}</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+                <button onClick={() => setShowAllActivity(!showAllActivity)} className="text-sm text-[#3B5BA5] hover:text-[#2A4380] font-medium p-4 border-t border-[#F0EEE6] w-full text-left">
+                    {showAllActivity ? 'Show less' : `View all activity (${recentActivity.length})`}
+                </button>
+            </div>
         </div>
     );
 };
 
-const SecurityView = () => (
-    <div className="bg-white border border-[#E5E3DA] p-6">
-        <h2 className="text-lg font-serif text-[#1F2937] mb-2">Security &amp; access</h2>
-        <p className="text-sm text-[#6B6B65] mb-6">Manage user roles, passwords, and system security.</p>
-        <div className="space-y-3">
-            <div className="flex items-center justify-between p-4 border border-[#E5E3DA] bg-[#FAFAF7]">
-                <div className="flex items-center gap-3">
-                    <ShieldAlert size={20} className="text-[#4C7A5A]" />
-                    <div>
-                        <p className="font-medium text-[#1F2937]">Two-factor authentication</p>
-                        <p className="text-xs text-[#6B6B65]">Add an extra layer of security for all admin accounts.</p>
+const SecurityView = () => {
+    // TODO: these are local-only for now - no backend endpoint exists yet to persist
+    // 2FA/role settings. Wire to a real "/settings/security" endpoint before shipping.
+    const [twoFAEnabled, setTwoFAEnabled] = useState(false);
+    const [rbacOpen, setRbacOpen] = useState(false);
+
+    return (
+        <div className="bg-gradient-to-br from-white to-[#F4F2EA] border border-[#E5E3DA] p-6 rounded-xl shadow-sm">
+            <h2 className="text-lg font-serif text-[#1F2937] mb-2">Security &amp; access</h2>
+            <p className="text-sm text-[#6B6B65] mb-6">Manage user roles, passwords, and system security.</p>
+            <div className="space-y-3">
+                <div className="flex items-center justify-between p-4 border border-[#E5E3DA] bg-[#FAFAF7] rounded-xl">
+                    <div className="flex items-center gap-3">
+                        <ShieldAlert size={20} className={twoFAEnabled ? 'text-[#4C7A5A]' : 'text-[#9C9A90]'} />
+                        <div>
+                            <p className="font-medium text-[#1F2937]">Two-factor authentication</p>
+                            <p className="text-xs text-[#6B6B65]">
+                                {twoFAEnabled ? 'Enabled for all admin accounts.' : 'Add an extra layer of security for all admin accounts.'}
+                            </p>
+                        </div>
                     </div>
+                    <button
+                        onClick={() => setTwoFAEnabled(!twoFAEnabled)}
+                        className={`text-sm px-3 py-1.5 rounded-lg ${twoFAEnabled ? 'text-[#6B6B65] border border-[#D8D6CC] hover:bg-white' : 'text-white bg-[#3B5BA5] hover:bg-[#2A4380]'}`}
+                    >
+                        {twoFAEnabled ? 'Disable' : 'Enable'}
+                    </button>
                 </div>
-                <button className="text-sm text-white bg-[#3B5BA5] px-3 py-1.5 hover:bg-[#2A4380]">Enable</button>
-            </div>
-            <div className="flex items-center justify-between p-4 border border-[#E5E3DA] bg-[#FAFAF7]">
-                <div className="flex items-center gap-3">
-                    <Users size={20} className="text-[#3B5BA5]" />
-                    <div>
-                        <p className="font-medium text-[#1F2937]">Role-based access control</p>
-                        <p className="text-xs text-[#6B6B65]">Manage what students, teachers, and admins can see.</p>
+                <div className="border border-[#E5E3DA] bg-[#FAFAF7] rounded-xl overflow-hidden">
+                    <div className="flex items-center justify-between p-4">
+                        <div className="flex items-center gap-3">
+                            <Users size={20} className="text-[#3B5BA5]" />
+                            <div>
+                                <p className="font-medium text-[#1F2937]">Role-based access control</p>
+                                <p className="text-xs text-[#6B6B65]">Manage what students, teachers, and admins can see.</p>
+                            </div>
+                        </div>
+                        <button onClick={() => setRbacOpen(!rbacOpen)} className="text-sm text-[#6B6B65] border border-[#D8D6CC] px-3 py-1.5 hover:bg-white rounded-lg">
+                            {rbacOpen ? 'Close' : 'Configure'}
+                        </button>
                     </div>
+                    {rbacOpen && (
+                        <div className="border-t border-[#E5E3DA] px-4 py-3 space-y-2">
+                            {/* TODO: replace with real role/permission data from the backend */}
+                            {[
+                                { role: 'Admin', access: 'Full access' },
+                                { role: 'Teacher', access: 'Own classes, grades, attendance' },
+                                { role: 'Student', access: 'Own grades and schedule only' },
+                            ].map((r) => (
+                                <div key={r.role} className="flex justify-between text-sm">
+                                    <span className="text-[#1F2937] font-medium">{r.role}</span>
+                                    <span className="text-[#6B6B65]">{r.access}</span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
-                <button className="text-sm text-[#6B6B65] border border-[#D8D6CC] px-3 py-1.5 hover:bg-white">Configure</button>
             </div>
         </div>
-    </div>
-);
+    );
+};
 
-const StudentsView = () => {
+const StudentsView = ({ searchQuery = '' }) => {
     const [students, setStudents] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [newStudent, setNewStudent] = useState({ name: '', email: '', password: 'pass123', studentId: '' });
@@ -576,6 +641,12 @@ const StudentsView = () => {
         loadStudents();
     }, []);
 
+    const filteredStudents = students.filter(s => {
+        const q = searchQuery.trim().toLowerCase();
+        if (!q) return true;
+        return s.name.toLowerCase().includes(q) || s.email.toLowerCase().includes(q) || (s.studentId || '').toLowerCase().includes(q);
+    });
+
     const handleAddStudent = async (e) => {
         e.preventDefault();
         try {
@@ -589,13 +660,15 @@ const StudentsView = () => {
     };
 
     return (
-        <div className="bg-white border border-[#E5E3DA] relative">
+        <div className="bg-gradient-to-br from-white to-[#F4F2EA] border border-[#E5E3DA] relative rounded-xl shadow-sm overflow-hidden">
             <div className="p-4 border-b border-[#E5E3DA] flex justify-between items-center">
                 <div>
                     <h2 className="text-lg font-serif text-[#1F2937]">Student register</h2>
-                    <p className="text-xs text-[#6B6B65] mt-1">{students.length} active students</p>
+                    <p className="text-xs text-[#6B6B65] mt-1">
+                        {searchQuery ? `${filteredStudents.length} of ${students.length} students match "${searchQuery}"` : `${students.length} active students`}
+                    </p>
                 </div>
-                <button onClick={() => setIsModalOpen(true)} className="text-sm text-white bg-[#1F2937] px-3 py-1.5 hover:bg-black">
+                <button onClick={() => setIsModalOpen(true)} className="text-sm text-white bg-[#1F2937] px-3 py-1.5 hover:bg-black rounded-lg">
                     Add student
                 </button>
             </div>
@@ -610,18 +683,18 @@ const StudentsView = () => {
                     </tr>
                 </thead>
                 <tbody>
-                    {students.length === 0 && (
-                        <tr><td colSpan="4" className="text-center py-10 text-[#9C9A90]">No students found.</td></tr>
+                    {filteredStudents.length === 0 && (
+                        <tr><td colSpan="4" className="text-center py-10 text-[#9C9A90]">{searchQuery ? `No students match "${searchQuery}".` : 'No students found.'}</td></tr>
                     )}
-                    {students.map(student => (
+                    {filteredStudents.map(student => (
                         <tr key={student._id} className="border-b border-[#F0EEE6] hover:bg-[#FAFAF7] transition-colors">
                             <td className="px-6 py-4 text-[#1F2937] font-medium">{student.name}</td>
                             <td className="px-6 py-4 text-[#6B6B65]">{student.email}</td>
                             <td className="px-6 py-4">
-                                <span className="px-2 py-1 bg-[#F0EEE6] text-[#4B4B47] text-xs font-mono">{student.studentId || 'N/A'}</span>
+                                <span className="px-2 py-1 bg-[#F0EEE6] text-[#4B4B47] text-xs font-mono rounded-md">{student.studentId || 'N/A'}</span>
                             </td>
                             <td className="px-6 py-4">
-                                <span className="inline-flex items-center gap-1.5 text-xs text-[#4C7A5A]">
+                                <span className="inline-flex items-center gap-1.5 text-xs text-[#4C7A5A] bg-[#EAF3EE] px-2 py-1 rounded-full">
                                     <span className="w-1.5 h-1.5 bg-[#4C7A5A] rounded-full"></span> Active
                                 </span>
                             </td>
@@ -653,7 +726,7 @@ const StudentsView = () => {
     );
 };
 
-const CoursesView = () => {
+const CoursesView = ({ searchQuery = '' }) => {
     const [courses, setCourses] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [newCourse, setNewCourse] = useState({ title: '', code: '', credits: 3 });
@@ -669,6 +742,12 @@ const CoursesView = () => {
         loadCourses();
     }, []);
 
+    const filteredCourses = courses.filter(c => {
+        const q = searchQuery.trim().toLowerCase();
+        if (!q) return true;
+        return c.title.toLowerCase().includes(q) || c.code.toLowerCase().includes(q) || (c.teacher?.name || '').toLowerCase().includes(q);
+    });
+
     const handleAddCourse = async (e) => {
         e.preventDefault();
         try {
@@ -682,13 +761,15 @@ const CoursesView = () => {
     };
 
     return (
-        <div className="bg-white border border-[#E5E3DA] relative">
+        <div className="bg-gradient-to-br from-white to-[#F4F2EA] border border-[#E5E3DA] relative rounded-xl shadow-sm overflow-hidden">
             <div className="p-4 border-b border-[#E5E3DA] flex justify-between items-center">
                 <div>
                     <h2 className="text-lg font-serif text-[#1F2937]">Active courses</h2>
-                    <p className="text-xs text-[#6B6B65] mt-1">{courses.length} courses offered this semester</p>
+                    <p className="text-xs text-[#6B6B65] mt-1">
+                        {searchQuery ? `${filteredCourses.length} of ${courses.length} courses match "${searchQuery}"` : `${courses.length} courses offered this semester`}
+                    </p>
                 </div>
-                <button onClick={() => setIsModalOpen(true)} className="text-sm text-white bg-[#1F2937] px-3 py-1.5 hover:bg-black">
+                <button onClick={() => setIsModalOpen(true)} className="text-sm text-white bg-[#1F2937] px-3 py-1.5 hover:bg-black rounded-lg">
                     Add course
                 </button>
             </div>
@@ -704,14 +785,14 @@ const CoursesView = () => {
                     </tr>
                 </thead>
                 <tbody>
-                    {courses.length === 0 && (
-                        <tr><td colSpan="5" className="text-center py-10 text-[#9C9A90]">No courses found.</td></tr>
+                    {filteredCourses.length === 0 && (
+                        <tr><td colSpan="5" className="text-center py-10 text-[#9C9A90]">{searchQuery ? `No courses match "${searchQuery}".` : 'No courses found.'}</td></tr>
                     )}
-                    {courses.map(course => (
+                    {filteredCourses.map(course => (
                         <tr key={course._id} className="border-b border-[#F0EEE6] hover:bg-[#FAFAF7] transition-colors">
                             <td className="px-6 py-4 text-[#1F2937] font-medium">{course.title}</td>
                             <td className="px-6 py-4">
-                                <span className="px-2 py-1 bg-[#EAF0FA] text-[#3B5BA5] text-xs font-mono">{course.code}</span>
+                                <span className="px-2 py-1 bg-[#EAF0FA] text-[#3B5BA5] text-xs font-mono rounded-md">{course.code}</span>
                             </td>
                             <td className="px-6 py-4 text-[#6B6B65]">{course.credits}</td>
                             <td className="px-6 py-4 text-[#4B4B47]">{course.teacher ? course.teacher.name : 'Unassigned'}</td>
@@ -755,18 +836,18 @@ const FinancesView = () => {
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-white border border-[#E5E3DA] p-6">
+            <div className="bg-gradient-to-br from-white to-[#F4F2EA] border border-[#E5E3DA] p-6 rounded-xl shadow-sm">
                 <p className="text-sm text-[#6B6B65]">Total revenue</p>
                 <p className="text-3xl font-serif text-[#4C7A5A] mt-2">GHS {stats ? stats.paid : 0}</p>
-                <div className="mt-4 h-1.5 bg-[#EAF3EE]">
-                    <div className="h-1.5 bg-[#4C7A5A]" style={{ width: `${stats ? (stats.paid / (stats.paid + stats.unpaid)) * 100 : 0}%` }}></div>
+                <div className="mt-4 h-1.5 bg-[#EAF3EE] rounded-full">
+                    <div className="h-1.5 bg-[#4C7A5A] rounded-full" style={{ width: `${stats ? (stats.paid / (stats.paid + stats.unpaid)) * 100 : 0}%` }}></div>
                 </div>
             </div>
-            <div className="bg-white border border-[#E5E3DA] p-6">
+            <div className="bg-gradient-to-br from-white to-[#F4F2EA] border border-[#E5E3DA] p-6 rounded-xl shadow-sm">
                 <p className="text-sm text-[#6B6B65]">Outstanding arrears</p>
                 <p className="text-3xl font-serif text-[#C97A2B] mt-2">GHS {stats ? stats.unpaid : 0}</p>
-                <div className="mt-4 h-1.5 bg-[#FBF1E3]">
-                    <div className="h-1.5 bg-[#C97A2B]" style={{ width: `${stats ? (stats.unpaid / (stats.paid + stats.unpaid)) * 100 : 0}%` }}></div>
+                <div className="mt-4 h-1.5 bg-[#FBF1E3] rounded-full">
+                    <div className="h-1.5 bg-[#C97A2B] rounded-full" style={{ width: `${stats ? (stats.unpaid / (stats.paid + stats.unpaid)) * 100 : 0}%` }}></div>
                 </div>
             </div>
         </div>
@@ -776,12 +857,15 @@ const FinancesView = () => {
 const CalendarView = () => {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState(null);
+    const [detailsExpanded, setDetailsExpanded] = useState(false);
 
+    // TODO: replace with a real "/events" endpoint - description/location are
+    // placeholder fields revealed by "View details" for now.
     const events = {
-        5: { title: 'Staff Meeting', tone: '#A9822B' },
-        12: { title: 'Mid-term Exams', tone: '#3B5BA5' },
-        19: { title: 'Fee Deadline', tone: '#C97A2B' },
-        25: { title: 'Founders\' Day', tone: '#4C7A5A' }
+        5: { title: 'Staff Meeting', tone: '#A9822B', location: 'Staff room', description: 'Weekly staff sync covering term progress and upcoming exams.' },
+        12: { title: 'Mid-term Exams', tone: '#3B5BA5', location: 'Exam hall', description: 'Mid-term exams begin across all grade levels. Check the exam timetable for room assignments.' },
+        19: { title: 'Fee Deadline', tone: '#C97A2B', location: 'Bursar\'s office', description: 'Final date for term 2 fee payment before late charges apply.' },
+        25: { title: 'Founders\' Day', tone: '#4C7A5A', location: 'Main hall', description: 'School holiday commemorating the founding of the school.' }
     };
 
     const year = currentDate.getFullYear();
@@ -804,7 +888,7 @@ const CalendarView = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
             {/* Calendar Grid - Fixed height to match the chart next to it */}
-            <div className="bg-white border border-[#E5E3DA] h-[332px] flex flex-col">
+            <div className="bg-gradient-to-br from-white to-[#F4F2EA] border border-[#E5E3DA] h-[332px] flex flex-col rounded-xl shadow-sm overflow-hidden">
                 <div className="flex items-center justify-between p-5 border-b border-[#F0EEE6]">
                     <h2 className="text-base font-serif text-[#1F2937]">{monthNames[month]} {year}</h2>
                     <div className="flex gap-2">
@@ -838,8 +922,8 @@ const CalendarView = () => {
                             return (
                                 <button 
                                     key={day} 
-                                    onClick={() => setSelectedDate(day)}
-                                    className={`h-16 p-1.5 border rounded-md flex flex-col items-start justify-start text-left transition-colors ${
+                                    onClick={() => { setSelectedDate(day); setDetailsExpanded(false); }}
+                                    className={`h-16 p-1.5 border rounded-lg flex flex-col items-start justify-start text-left transition-colors ${
                                         isSelected ? 'border-[#3B5BA5] bg-[#EAF0FA]' : 'border-transparent hover:bg-[#FAFAF7]'
                                     }`}
                                 >
@@ -860,7 +944,7 @@ const CalendarView = () => {
             </div>
 
             {/* Event Details Sidebar */}
-            <div className="lg:col-span-2 bg-white border border-[#E5E3DA] p-5 flex flex-col">
+            <div className="lg:col-span-2 bg-gradient-to-br from-white to-[#F4F2EA] border border-[#E5E3DA] p-5 flex flex-col rounded-xl shadow-sm">
                 <h3 className="text-base font-serif text-[#1F2937] mb-1">Event Details</h3>
                 <p className="text-xs text-[#6B6B65] mb-5">
                     {selectedDate ? `${monthNames[month]} ${selectedDate}, ${year}` : 'Select a day on the calendar to view events'}
@@ -868,10 +952,18 @@ const CalendarView = () => {
 
                 <div className="space-y-3 flex-1">
                     {selectedDate && events[selectedDate] ? (
-                        <div className="p-4 border-l-4 bg-[#FAFAF7]" style={{ borderColor: events[selectedDate].tone }}>
+                        <div className="p-4 border-l-4 bg-[#FAFAF7] rounded-r-lg" style={{ borderColor: events[selectedDate].tone }}>
                             <p className="text-sm font-medium text-[#1F2937]">{events[selectedDate].title}</p>
                             <p className="text-xs text-[#9C9A90] mt-1">All day event · {monthNames[month]} {selectedDate}</p>
-                            <button className="mt-3 text-xs text-[#3B5BA5] hover:text-[#2A4380] font-medium">View details →</button>
+                            {detailsExpanded && (
+                                <div className="mt-3 pt-3 border-t border-[#E5E3DA] space-y-1.5">
+                                    <p className="text-xs text-[#4B4B47]"><span className="text-[#6B6B65]">Location:</span> {events[selectedDate].location}</p>
+                                    <p className="text-xs text-[#4B4B47]">{events[selectedDate].description}</p>
+                                </div>
+                            )}
+                            <button onClick={() => setDetailsExpanded(!detailsExpanded)} className="mt-3 text-xs text-[#3B5BA5] hover:text-[#2A4380] font-medium">
+                                {detailsExpanded ? 'Hide details' : 'View details →'}
+                            </button>
                         </div>
                     ) : (
                         <div className="flex flex-col items-center justify-center h-full text-center">
@@ -886,4 +978,5 @@ const CalendarView = () => {
         </div>
     );
 };
+
 export default App;
